@@ -1,49 +1,81 @@
 #ifndef SHELL_H
 #define SHELL_H
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
-#include <stddef.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-#define TOK_DELIM " \t\r\n\v\a"
+#include <unistd.h>
+#include <errno.h>
+#include <dirent.h>
+#include <signal.h>
+
+
+/*constants*/
+#define EXTERNAL_COMMAND 1
+#define INTERNAL_COMMAND 2
+#define PATH_COMMAND 3
+#define INVALID_COMMAND -1
+
+#define min(x, y) (((x) < (y)) ? (x) : (y))
+
 /**
-* struct list_path - singly linked list
-* @dir: string - (malloc'ed string)
-* @next: points to the next node
-*
-* Description: singly linked list node structure
-* for directories of PATH
-*/
-typedef struct list_path
+ *struct map - a struct that maps a command name to a function 
+ *
+ *@command_name: name of the command
+ *@func: the function that executes the command
+ */
+
+typedef struct map
 {
-	char *dir;
-	struct list_path *next;
-} list_p;
+	char *command_name;
+	void (*func)(char **command);
+} function_map;
 
-/*Functions of the shell*/
-void execute_line(char **argv, char **commands, int count,
-		  char **env, int *exit_st, char *line);
-char **split_line(char *line);
-list_p *list_path(char **env);
-int _setenv(const char *name, const char *value, int overwrite);
-char *_which(char **commands, char **env);
-void built_exit(char *line, char **arg, int *exit_st, int count);
-void built_env(char **arg, char **env, int *exit_st);
-char *_getenv(const char *name, char **env);
-void _error(char **argv, char *first, int count, int **exit_st);
-int special_case(char *line, ssize_t line_len, int *exit_st);
-void print_num(int count);
+extern char **environ;
+extern char *line;
+extern char **commands;
+extern char *shell_name;
+extern int status;
 
-/*useful functions*/
-int _strlen(char *s);
-void add_node_end(list_p **head, const char *str);
-char *_strcat(char *s1, char *s2);
-char *_strdup(char *str);
-int _strcmp(char *s1, char *s2);
-void free_loop(char **arr);
-void free_list(list_p *head);
-char *_strncpy(char *dest, char *src, int n);
-#endif /* SHELL_H*/
+/*helpers*/
+void print(char *, int);
+char **tokenizer(char *, char *);
+void remove_newline(char *);
+int _strlen(char *);
+void _strcpy(char *, char *);
+
+/*helpers2*/
+int _strcmp(char *, char *);
+char *_strcat(char *, char *);
+int _strspn(char *, char *);
+int _strcspn(char *, char *);
+char *_strchr(char *, char);
+
+/*helpers3*/
+char *_strtok_r(char *, char *, char **);
+int _atoi(char *);
+void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size);
+void ctrl_c_handler(int);
+void remove_comment(char *);
+
+/*utils*/
+int parse_command(char *);
+void execute_command(char **, int);
+char *check_path(char *);
+void (*get_func(char *))(char **);
+char *_getenv(char *);
+
+/*built_in*/
+void env(char **);
+void quit(char **);
+
+/*main*/
+extern void non_interactive(void);
+extern void initializer(char **current_command, int type_command);
+
+#endif /*SHELL_H*/
+
+
